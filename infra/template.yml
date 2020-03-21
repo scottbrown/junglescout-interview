@@ -23,6 +23,30 @@ Parameters:
     MinValue: 1
     MaxValue: 65535
     Default: 3000 # see /server.js
+  LogRetentionPolicyInDays:
+    Type: Number
+    Description: 'Number of days to keep logs'
+    MinValue: 1
+    MaxValue: 512
+    Default: 3 # for the purposes of the interview project
+  ImageRepo:
+    Type: String
+    Default: '813665760468.dkr.ecr.us-east-1.amazonaws.com'
+  ImageName:
+    Type: String
+    Default: 'junglescout-interview:latest'
+  DesiredCpu:
+    Type: String
+    Default: '256'
+    AllowedValues: # Add more as needed or approved by budget
+      - '256'
+  DesiredMemory:
+    Type: String
+    Default: '0.5GB'
+    AllowedValues: # Must be adjusted in concert with CpuMax
+      - '0.5GB'
+      - '1GB'
+      - '2GB'
 
 Resources:
   # Network Configuration
@@ -93,6 +117,28 @@ Resources:
   Cluster:
     Type: 'AWS::ECS::Cluster'
 
+  TaskDef:
+    Type: 'AWS::ECS::TaskDefinition'
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: !Ref DesiredCpu
+      Memory: !Ref DesiredMemory
+      ExecutionRoleArn: !Ref ClusterRole
+      TaskRoleArn: !Ref ContainerRole
+      ContainerDefinitions:
+        - Name: !Ref SvcName
+          Image: !Sub "${ImageRepo}/${ImageName}"
+          PortMappings:
+            - ContainerPort: !Ref AppPort
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref LogGroup
+              awslogs-stream-prefix: ecs 
+
   ClusterRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -130,6 +176,16 @@ Resources:
           SourceSecurityGroupId: !Ref LoadBalancerSG
 
   # LB Resources
+  LoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref LoadBalancerSG
+      Subnets:
+        - !Ref LBSubnet1
+        - !Ref LBSubnet2
+
   LoadBalancerSG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -141,3 +197,9 @@ Resources:
           ToPort: !Ref LoadBalancerPort
           CidrIp: '0.0.0.0/0' # Internet
 
+  # Logging Resources
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ecs/${SvcName}"
+      RetentionInDays: !Ref LogRetentionPolicyInDays
