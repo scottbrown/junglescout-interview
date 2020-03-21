@@ -144,7 +144,7 @@ Resources:
       TaskRoleArn: !Ref ContainerRole
       ContainerDefinitions:
         - Name: !Ref SvcName
-          Image: !Sub "${ImageRepo}/${ImageName}"
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ImageName}"
           PortMappings:
             - ContainerPort: !Ref AppPort
           LogConfiguration:
@@ -178,7 +178,7 @@ Resources:
   ClusterRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      Path: !Sub "/${EnvName}/${SvcName}/"
+#     Path: !Sub "/${EnvName}/${SvcName}/"
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -192,7 +192,7 @@ Resources:
   ContainerRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      Path: !Sub "/${EnvName}/${SvcName}/"
+#     Path: !Sub "/${EnvName}/${SvcName}/"
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
