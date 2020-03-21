@@ -203,3 +203,8 @@ Resources:
     Properties:
       LogGroupName: !Sub "/ecs/${SvcName}"
       RetentionInDays: !Ref LogRetentionPolicyInDays
+
+Outputs:
+  ServiceUrl:
+    Value: !Sub "http://${LoadBalancer.DNSName}"
+    Description: "URL endpoint for the service (non-SSL)"
