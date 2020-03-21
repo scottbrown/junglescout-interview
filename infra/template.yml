@@ -1,0 +1,262 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Provisions infrastructure for the node-restful-api-tutorial application.
+
+Parameters:
+  SvcName:
+    Type: String
+    Description: 'Name of the service'
+    Default: 'js'
+  EnvName:
+    Type: String
+    Description: 'Memorable name for the environment'
+  LoadBalancerPort:
+    Type: Number
+    Description: 'Port used by the load balancer'
+    MinValue: 1
+    MaxValue: 65535
+    Default: 80
+  AppPort:
+    Type: Number
+    Description: 'Port used by the service for HTTP requests'
+    MinValue: 1
+    MaxValue: 65535
+    Default: 3000 # see /server.js
+  LogRetentionPolicyInDays:
+    Type: Number
+    Description: 'Number of days to keep logs'
+    MinValue: 1
+    MaxValue: 512
+    Default: 3 # for the purposes of the interview project
+  ImageName:
+    Type: String
+    Default: 'scottbrown/junglescout-interview:latest'
+  DesiredCpu:
+    Type: String
+    Default: '256'
+    AllowedValues: # Add more as needed or approved by budget
+      - '256'
+  DesiredMemory:
+    Type: String
+    Default: '0.5GB'
+    AllowedValues: # Must be adjusted in concert with CpuMax
+      - '0.5GB'
+      - '1GB'
+      - '2GB'
+
+Resources:
+  # Network Configuration
+  Vpc:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: '10.0.0.0/23'
+      Tags:
+        - Key: Name
+          Value: !Sub "${SvcName}-${EnvName}"
+  Igw:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${SvcName}-${EnvName}"
+  RouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${SvcName}-${EnvName}"
+  IgwVpcAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref Igw
+  RouteToInternet:
+    Type: 'AWS::EC2::Route'
+    DependsOn: IgwVpcAttachment
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref Igw
+      RouteTableId: !Ref RouteTable
+  LBSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: '10.0.0.0/25'
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${SvcName}-${EnvName}-lb-1"
+  LBSubnet1RouteTable:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref LBSubnet1
+      RouteTableId: !Ref RouteTable
+  LBSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: '10.0.0.128/25'
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${SvcName}-${EnvName}-lb-2"
+  LBSubnet2RouteTable:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref LBSubnet2
+      RouteTableId: !Ref RouteTable
+  SvcSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: '10.0.1.0/25'
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${SvcName}-${EnvName}-svc-1"
+  SvcSubnet1RouteTable:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref SvcSubnet1
+      RouteTableId: !Ref RouteTable
+
+  # ECS Resources
+  Cluster:
+    Type: 'AWS::ECS::Cluster'
+
+  TaskDef:
+    Type: 'AWS::ECS::TaskDefinition'
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: !Ref DesiredCpu
+      Memory: !Ref DesiredMemory
+      ExecutionRoleArn: !Ref ClusterRole
+      TaskRoleArn: !Ref ContainerRole
+      ContainerDefinitions:
+        - Name: !Ref SvcName
+          Image: !Ref ImageName
+          PortMappings:
+            - ContainerPort: !Ref AppPort
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref LogGroup
+              awslogs-stream-prefix: ecs 
+
+  Service:
+    Type: 'AWS::ECS::Service'
+    DependsOn: HttpListener
+    Properties:
+      ServiceName: !Ref SvcName
+      Cluster: !Ref Cluster
+      TaskDefinition: !Ref TaskDef
+      DesiredCount: 1
+      LaunchType: FARGATE
+      LoadBalancers:
+        - ContainerName: !Ref SvcName
+          ContainerPort: !Ref AppPort
+          TargetGroupArn: !Ref TargetGroup
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !Ref SvcSG
+          Subnets:
+            - !Ref SvcSubnet1 # NB: Add more subnets for multi-AZ
+      PropagateTags: SERVICE
+
+  ClusterRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+#     Path: !Sub "/${EnvName}/${SvcName}/"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
+
+  # NB: Policies are defined separately from the role for clarity/reuse
+  ContainerRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+#     Path: !Sub "/${EnvName}/${SvcName}/"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+
+  SvcSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Restricts traffic from ECS to load balancer'
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref AppPort
+          ToPort: !Ref AppPort
+          SourceSecurityGroupId: !Ref LoadBalancerSG
+
+  # LB Resources
+  LoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref LoadBalancerSG
+      Subnets:
+        - !Ref LBSubnet1
+        - !Ref LBSubnet2
+
+  TargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      Port: !Ref AppPort
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref Vpc
+
+  HttpListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref TargetGroup
+          Type: forward
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: !Ref LoadBalancerPort
+      Protocol: HTTP
+
+  LoadBalancerSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Allows traffic from the Internet'
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref LoadBalancerPort
+          ToPort: !Ref LoadBalancerPort
+          CidrIp: '0.0.0.0/0' # Internet
+
+  # Logging Resources
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ecs/${SvcName}"
+      RetentionInDays: !Ref LogRetentionPolicyInDays
+
+Outputs:
+  ServiceUrl:
+    Value: !Sub "http://${LoadBalancer.DNSName}"
+    Description: "URL endpoint for the service (non-SSL)"
