@@ -51,6 +51,10 @@ Local working copy:
 
 ![Local Environment Screenshot](./interview/screenshot-local.png)
 
+ECS working copy:
+
+![ECS Screenshot](./interview/screenshot-ecs.png)
+
 ## Provisioning
 
 This project's infrastructure uses `make` to provision and maintain the
@@ -78,7 +82,9 @@ embarking on a new type of service I've never used (in this case, ECS).
 ## And anything that you feel comfortable to show your skills
 
 * I specifically don't provide names for CloudFormation (CFN) resources, because otherwise then any updates to the names would require replacement of those resources.  In addition, it could cause name conflicts when deploying the same service to the same region where one already exists.  Instead, using randomly-generated names from AWS ensures consistent naming and no conflicts.
-* I included the VPC and Subnet resources in the CloudFormation stack because I prefer to isolate the application from all other applications unless it needs to live with other applications.  I specifically do not promote the use of the default VPC as it is an anti-pattern -- in my AWS accounts I have already removed the default VPC so I can't use it even if I wanted.
+* I included the VPC and Subnet resources in the CloudFormation stack because I prefer to isolate the application from all other applications unless it needs to live with other applications.  I specifically do not promote the use of the default VPC as it is an anti-pattern.
+* I had to recreate the networking layer because in my AWS accounts I have already removed the default VPC so I can't use it even if I wanted.  This increased the amount of time to complete the project.
+* I created 2 subnets for load balancers for multi-AZ failover support and to separate the LBs from the ECS service in the event of IP address exhaustion.  I would also harden the ECS subnet so that there is no public ingress, but I ran short of time.
 * I try to use the default values in CloudFormation resources to reduce the size of the template (there are hard limits by AWS) and increase readability.  If something needs to be changed, we update the template, then update the stack.
 * The provisioning is intended to be as independent as possible so that it doesn't rely on external services or tools.  This can be adjusted later, but I find that changing/updating CFN stacks can show there is a probllem in automation, so I prefer to nudge people to create stacks once and update as necessary, but only when it is absolutely required.
 * Many of the CFN parameters have defaults not because they are expected to be user-configurable, but to reduce magic constants in the template.
@@ -86,8 +92,10 @@ embarking on a new type of service I've never used (in this case, ECS).
 * I probably would break this up into 2 stacks, one for networking and the other for application.  But for expediency and for ease of cleanup, I put them all into one stack.
 * I'd love to use slim or scratch to build the docker image since it is quite large and could impact CI runtimes (during push), costs (for storage in ECR) or startup times on ECS.
 * Depending on the security need, I would pin the base image used in the docker container to the hash instead of a tag because Docker tags can be overwritten and you might now realize what you are getting.
+* I didn't include SSL termination for the load balancer.  I would have had to create a DNS record and an ACM certificate, but I was not going to attach it to a domain I have.
 
 ## Bugs I found
 
 * ECR has changed their login process from the AWS CLI.  Their documentation references something that no longer exists in the CLI.
 * Using IAM role paths seems to break the role assumption used by the ECS task scheduler.  I commented them out and the ECS service started working.
+* ECS requires the use of `AssignPublicIP: ENABLED` in order to pull docker images from anywhere.  This was not in the CFN docs, but rather in the support docs when you Google the error code produced by ECS.
