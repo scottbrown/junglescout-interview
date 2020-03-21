@@ -1,7 +1,0 @@
-[
-    {
-        "Description": "URL endpoint for the service (non-SSL)", 
-        "OutputKey": "ServiceUrl", 
-        "OutputValue": "http://js-LoadBala-1IA9AQ3IW4BAY-1407467690.us-east-1.elb.amazonaws.com"
-    }
-]
