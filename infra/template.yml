@@ -29,12 +29,9 @@ Parameters:
     MinValue: 1
     MaxValue: 512
     Default: 3 # for the purposes of the interview project
-  ImageRepo:
-    Type: String
-    Default: '813665760468.dkr.ecr.us-east-1.amazonaws.com'
   ImageName:
     Type: String
-    Default: 'junglescout-interview:latest'
+    Default: 'scottbrown/junglescout-interview:latest'
   DesiredCpu:
     Type: String
     Default: '256'
@@ -144,7 +141,7 @@ Resources:
       TaskRoleArn: !Ref ContainerRole
       ContainerDefinitions:
         - Name: !Ref SvcName
-          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ImageName}"
+          Image: !Ref ImageName
           PortMappings:
             - ContainerPort: !Ref AppPort
           LogConfiguration:
@@ -169,6 +166,7 @@ Resources:
           TargetGroupArn: !Ref TargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
           SecurityGroups:
             - !Ref SvcSG
           Subnets:
