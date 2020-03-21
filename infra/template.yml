@@ -186,6 +186,14 @@ Resources:
         - !Ref LBSubnet1
         - !Ref LBSubnet2
 
+  TargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      Port: !Ref AppPort
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref Vpc
+
   LoadBalancerSG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
