@@ -70,6 +70,7 @@ status: get-env ## Displays the last status of the stack
 		--profile $(aws.profile) \
 		--query 'StackEvents[0]'
 
+.PHONY: outputs
 outputs: get-env ## Displays the outputs of this stack
 	@aws cloudformation describe-stacks \
 		--stack-name $(stack.name) \
@@ -77,6 +78,7 @@ outputs: get-env ## Displays the outputs of this stack
 		--profile $(aws.profile) \
 		--query 'Stacks[0].Outputs'
 
+.PHONY: last-create-failure
 last-create-failure: get-env ## Displays the last create failure
 	aws cloudformation describe-stack-events \
 		--stack-name $(stack.name) \
@@ -84,6 +86,7 @@ last-create-failure: get-env ## Displays the last create failure
 		--profile $(aws.profile) \
 		--query 'StackEvents[?ResourceStatus == `CREATE_FAILED`] | [0]'
 
+.PHONY: last-update-failure
 last-update-failure: get-env ## Displays the last update failure
 	aws cloudformation describe-stack-events \
 		--stack-name $(stack.name) \
@@ -96,7 +99,8 @@ last-update-failure: get-env ## Displays the last update failure
 # a manual step to delete the stack.  This can be adjusted as necessary
 # as there is additional protection in the form of stack termination
 # protection.
-delete-stack: get-env ## Deletes the stack
+.PHONY: delete
+delete: get-env ## Deletes the stack
 	echo "Not implemented"
 
 
