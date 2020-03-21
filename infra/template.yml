@@ -1,0 +1,79 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Provisions infrastructure for the node-restful-api-tutorial application.
+
+Parameters:
+  SvcName:
+    Type: String
+    Description: 'Name of the service'
+    Default: 'js'
+  EnvName:
+    Type: String
+    Description: 'Memorable name for the environment'
+
+Resources:
+  # Network Configuration
+  Vpc:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: '10.0.0.0/23'
+      Tags:
+        - Key: Name
+          Value: !Sub "${SvcName}-${EnvName}"
+  Igw:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${SvcName}-${EnvName}"
+  RouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${SvcName}-${EnvName}"
+  IgwVpcAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref Igw
+  RouteToInternet:
+    Type: 'AWS::EC2::Route'
+    DependsOn: Igw
+    Properties:
+      RouteTableId: !Ref RouteTable
+      GatewayId: !Ref Igw
+      DestinationCidrBlock: 0.0.0.0/0
+  LBSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      CidrBlock: '10.0.0.0/25'
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${SvcName}-${EnvName}-lb-a"
+  LBSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}b"
+      CidrBlock: '10.0.0.128/25'
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${SvcName}-${EnvName}-lb-b"
+  SvcSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      CidrBlock: '10.0.1.0/25'
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${SvcName}-${EnvName}-svc-a"
+
