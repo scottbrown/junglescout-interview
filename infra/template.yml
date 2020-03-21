@@ -93,6 +93,31 @@ Resources:
   Cluster:
     Type: 'AWS::ECS::Cluster'
 
+  ClusterRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      Path: !Sub "/${EnvName}/${SvcName}/"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
+
+  # NB: Policies are defined separately from the role for clarity/reuse
+  ContainerRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      Path: !Sub "/${EnvName}/${SvcName}/"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+
   SvcSG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
