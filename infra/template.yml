@@ -154,6 +154,27 @@ Resources:
               awslogs-group: !Ref LogGroup
               awslogs-stream-prefix: ecs 
 
+  Service:
+    Type: 'AWS::ECS::Service'
+    DependsOn: HttpListener
+    Properties:
+      ServiceName: !Ref SvcName
+      Cluster: !Ref Cluster
+      TaskDefinition: !Ref TaskDef
+      DesiredCount: 1
+      LaunchType: FARGATE
+      LoadBalancers:
+        - ContainerName: !Ref SvcName
+          ContainerPort: !Ref AppPort
+          TargetGroupArn: !Ref TargetGroup
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - !Ref SvcSG
+          Subnets:
+            - !Ref SvcSubnet1 # NB: Add more subnets for multi-AZ
+      PropagateTags: SERVICE
+
   ClusterRole:
     Type: 'AWS::IAM::Role'
     Properties:
