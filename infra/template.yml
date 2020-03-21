@@ -11,6 +11,18 @@ Parameters:
   EnvName:
     Type: String
     Description: 'Memorable name for the environment'
+  LoadBalancerPort:
+    Type: Number
+    Description: 'Port used by the load balancer'
+    MinValue: 1
+    MaxValue: 65535
+    Default: 80
+  AppPort:
+    Type: Number
+    Description: 'Port used by the service for HTTP requests'
+    MinValue: 1
+    MaxValue: 65535
+    Default: 3000 # see /server.js
 
 Resources:
   # Network Configuration
@@ -76,4 +88,31 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${SvcName}-${EnvName}-svc-a"
+
+  # ECS Resources
+  Cluster:
+    Type: 'AWS::ECS::Cluster'
+
+  SvcSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Restricts traffic from ECS to load balancer'
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref AppPort
+          ToPort: !Ref AppPort
+          SourceSecurityGroupId: !Ref LoadBalancerSG
+
+  # LB Resources
+  LoadBalancerSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Allows traffic from the Internet'
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref LoadBalancerPort
+          ToPort: !Ref LoadBalancerPort
+          CidrIp: '0.0.0.0/0' # Internet
 
