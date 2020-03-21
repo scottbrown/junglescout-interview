@@ -4,22 +4,22 @@
 
 Please create a GitHub repo with demonstrates your technical skills:
 
-[x] Can you containerize(Docker or Kubernetes) this simple app (https://github.com/academind/node-restful-api-tutorial) or create your own app.
-[x] Provision the application onto one of the following: AWS ECS, AWS EKS, AWS EB using infrastructure as code (Terraform, Cloudformation).
-[x] Describe how you would monitor this application e.g metrics you would track and thresholds you would report on.
-[x] Describe how you would protect this app from being accessed by unauthorized users.
-[x] Describe how would you set up the env so it scales automatically when response time drops below 20ms.
+* [x] Can you containerize(Docker or Kubernetes) this simple app (https://github.com/academind/node-restful-api-tutorial) or create your own app.
+* [x] Provision the application onto one of the following: AWS ECS, AWS EKS, AWS EB using infrastructure as code (Terraform, Cloudformation).
+* [x] Describe how you would monitor this application e.g metrics you would track and thresholds you would report on.
+* [x] Describe how you would protect this app from being accessed by unauthorized users.
+* [x] Describe how would you set up the env so it scales automatically when response time drops below 20ms.
 
 Feel free to add:
 
-[x] README files
-[x] Tests
-[x] Diagrams
-[x] Code/Configs
-[x] Screenshots of a working version
-[x] Examples of how you would provision using infrastructure as code.
-[ ] Optionally a CI configuration
-[x] And anything that you feel comfortable to show your skills
+* [x] README files
+* [x] Tests
+* [x] Diagrams
+* [x] Code/Configs
+* [x] Screenshots of a working version
+* [x] Examples of how you would provision using infrastructure as code.
+* [ ] Optionally a CI configuration
+* [x] And anything that you feel comfortable to show your skills
 
 Note: If you have any extra costs associated with AWS with this code challenge, please send us the invoice for reimbursement. The charges will need to be pre-approved.
 
