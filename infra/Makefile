@@ -94,6 +94,10 @@ last-update-failure: get-env ## Displays the last update failure
 		--profile $(aws.profile) \
 		--query 'StackEvents[?ResourceStatus == `UPDATE_FAILED`] | [0]'
 
+.PHONY: test
+test: get-env ## Tests the deploy stack from the web
+	@curl $(shell aws cloudformation describe-stacks --stack-name $(stack.name) --region $(stack.region) --profile $(aws.profile) --query 'Stacks[0].Outputs[?OutputKey == `ServiceUrl`].OutputValue' --output text)
+
 # There is no delete-stack as, in production, we do not want this to be
 # automatically/accidentally triggered.  I want someone to jump through
 # a manual step to delete the stack.  This can be adjusted as necessary
