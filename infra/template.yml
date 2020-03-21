@@ -77,41 +77,56 @@ Resources:
       InternetGatewayId: !Ref Igw
   RouteToInternet:
     Type: 'AWS::EC2::Route'
-    DependsOn: Igw
+    DependsOn: IgwVpcAttachment
     Properties:
-      RouteTableId: !Ref RouteTable
-      GatewayId: !Ref Igw
       DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref Igw
+      RouteTableId: !Ref RouteTable
   LBSubnet1:
     Type: "AWS::EC2::Subnet"
     Properties:
-      AvailabilityZone: !Sub "${AWS::Region}a"
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
       CidrBlock: '10.0.0.0/25'
       MapPublicIpOnLaunch: true
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub "${SvcName}-${EnvName}-lb-a"
+          Value: !Sub "${SvcName}-${EnvName}-lb-1"
+  LBSubnet1RouteTable:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref LBSubnet1
+      RouteTableId: !Ref RouteTable
   LBSubnet2:
     Type: "AWS::EC2::Subnet"
     Properties:
-      AvailabilityZone: !Sub "${AWS::Region}b"
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
       CidrBlock: '10.0.0.128/25'
       MapPublicIpOnLaunch: true
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub "${SvcName}-${EnvName}-lb-b"
+          Value: !Sub "${SvcName}-${EnvName}-lb-2"
+  LBSubnet2RouteTable:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref LBSubnet2
+      RouteTableId: !Ref RouteTable
   SvcSubnet1:
     Type: "AWS::EC2::Subnet"
     Properties:
-      AvailabilityZone: !Sub "${AWS::Region}a"
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
       CidrBlock: '10.0.1.0/25'
       MapPublicIpOnLaunch: true
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub "${SvcName}-${EnvName}-svc-a"
+          Value: !Sub "${SvcName}-${EnvName}-svc-1"
+  SvcSubnet1RouteTable:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref SvcSubnet1
+      RouteTableId: !Ref RouteTable
 
   # ECS Resources
   Cluster:
@@ -193,6 +208,16 @@ Resources:
       Protocol: HTTP
       TargetType: ip
       VpcId: !Ref Vpc
+
+  HttpListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref TargetGroup
+          Type: forward
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: !Ref LoadBalancerPort
+      Protocol: HTTP
 
   LoadBalancerSG:
     Type: 'AWS::EC2::SecurityGroup'
