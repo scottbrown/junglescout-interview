@@ -82,17 +82,17 @@ The only tests I came up with is:
 
 ## Architecture Diagram
 
-![Architecture Diagram](./interview/architecture.png)
+![Architecture Diagram](architecture.png)
 
 ## Screenshots
 
 Local working copy:
 
-![Local Environment Screenshot](./interview/screenshot-local.png)
+![Local Environment Screenshot](screenshot-local.png)
 
 ECS working copy:
 
-![ECS Screenshot](./interview/screenshot-ecs.png)
+![ECS Screenshot](screenshot-ecs.png)
 
 The ECS environment is available [here](http://js-LoadBala-1IA9AQ3IW4BAY-1407467690.us-east-1.elb.amazonaws.com).  This can also be found after launching the CloudFormation stack successfully:
 
