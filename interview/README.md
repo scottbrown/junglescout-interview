@@ -25,7 +25,7 @@ Note: If you have any extra costs associated with AWS with this code challenge, 
 
 ## Answers
 
-# Describe how you would monitor this application e.g metrics you would track and thresholds you would report on.
+>Describe how you would monitor this application e.g metrics you would track and thresholds you would report on.
 
 I would track memory and CPU usage, then scale up or down the service as needed.  ECS can have autoscaling provisioned for the cluster and will react to Cloudwatch alarms on specific dimensions, like CPU or memory thresholds.
 
@@ -33,7 +33,7 @@ I would also add a Route53 healthcheck on the URL endpoint and attach it to a cl
 
 I have built in multi-AZ load balancing and, optionally, multi-AZ application service so we would not experience a single AZ outage.  However, an underlying service, like IAM, could knock out the entire application so we would need to be cognizant of that situation (it happens more than you think).
 
-# Describe how you would protect this app from being accessed by unauthorized users.
+>Describe how you would protect this app from being accessed by unauthorized users.
 
 What kind of unauthorized users?  Is this API expected to be limited to a specific IP address, or a given API key, or for only internal users?
 
@@ -47,7 +47,7 @@ Since the service may be transmitting sensitive information, it would need an SS
 
 On the network level, the security groups block nosey users from scanning the ECS host because I am locking down all ingress to just requests from the load balancer.  The load balancers themselves allow the Internet to scan them on port 80 (HTTP), but even attacking these nodes wouldn't result in any security breach because the LBs are isolated from the application (ECS) instances via subnets.
 
-# Describe how would you set up the env so it scales automatically when response time drops below 20ms.
+>Describe how would you set up the env so it scales automatically when response time drops below 20ms.
 
 I don't see a CloudWatch metric for this.  That said, there is a new (Sep 2019) feature called Container Insights that might provide this metric.  If it is a metric that can be published to Cloudwatch, then a CloudWatch alarm can be generated and we can modify the scaling policy to help with that.  However, it depends on why the application response time is dropping.
 
